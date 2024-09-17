@@ -1,17 +1,35 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-import { multiply } from 'prova-picker';
+import { StyleSheet, View, Button } from 'react-native';
+import { SelectModal, SelectPicker, SelectTrigger } from 'prova-picker';
+import type { ItemType, SelectPickerRef } from '../../src/types';
+import { useRef } from 'react';
 
 export default function App() {
-  const [result, setResult] = useState<number | undefined>();
-
-  useEffect(() => {
-    multiply(3, 7).then(setResult);
-  }, []);
+  const items: ItemType[] = [
+    {
+      key: 'item1',
+      label: 'Item 1',
+      value: 'item1',
+    },
+    {
+      key: 'item2',
+      label: 'Item 2',
+      value: 'item2',
+    },
+  ];
+  const select = useRef<SelectPickerRef>();
 
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <SelectPicker
+        onSelectItem={(item) => console.log(item)}
+        SelectPickerRef={(ref) => (select.current = ref)}
+        items={items}
+        multiSelect
+      >
+        <SelectTrigger style={{ backgroundColor: 'red' }} />
+        <SelectModal />
+      </SelectPicker>
+      <Button title="apri" onPress={() => select.current?.open()} />
     </View>
   );
 }
