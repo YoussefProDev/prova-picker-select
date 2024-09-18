@@ -6,10 +6,15 @@ import type {
   SelectPickerRef,
   SelectTriggerProps,
 } from './types';
-import { Text, TouchableOpacity, View } from 'react-native';
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  View,
+  type ListRenderItem,
+} from 'react-native';
 import { Styles, getStyles, type defaultStyle } from './styles';
 import { FlashList } from '@shopify/flash-list';
-import BottomSheet from '@gorhom/bottom-sheet';
 
 type SelectPickerContext = {
   disable: boolean;
@@ -24,7 +29,7 @@ type SelectPickerContext = {
   setVisible: (visible: boolean) => void;
   selectItem?: ItemType;
   setSelectItem: (item: ItemType) => void;
-  selectsItem?: ItemType[];
+  selectsItem: ItemType[];
   setSelectsItem: (
     item: ItemType[] | ((item: ItemType[]) => ItemType[])
   ) => void;
@@ -109,6 +114,7 @@ const SelectModal = ({ renderItem, style }: SelectModalProps) => {
 
   const {
     setVisible,
+    visible,
     items,
     setSelectItem,
     defaultStyle,
@@ -122,55 +128,67 @@ const SelectModal = ({ renderItem, style }: SelectModalProps) => {
   //   setCode(data.code);
   //   setSymbol(data.symbol);
   //   setSymbolNative(data.symbol_native);
+  const [wasSelected, setWasSelected] = useState<string[]>([]);
   // };
-  const [ownSelectsItem] = useState({
-    selectsItems: selectsItem?.map((item) => item),
-  });
+  const renderItemTemplate = ({
+    item,
+    index,
+  }: {
+    item: ItemType;
+    index?: number;
+  }) => {
+    const isLastItem = items.length - 1 === index;
+    // let wasSelected = selectsItem.includes(item);
+    return (
+      <TouchableOpacity
+        key={item.key}
+        onPress={() => {
+          if (multiSelect) {
+            setSelectsItem((prev) => [...prev, item]);
+            console.log(item);
+
+            // console.log(selectsItem[0]);
+            // if (wasSelected.includes(item.key))
+            //   setWasSelected((prev) => prev.reduce((acc,newItem)=> if(item.key === item.key) item));
+            // onSelect(item);
+            console.log('wasSelected', wasSelected);
+          } else {
+            setVisible(false);
+            setSelectItem(item);
+          }
+        }}
+        style={{
+          marginBottom: isLastItem ? 80 : 0,
+          backgroundColor: wasSelected.includes(item.key)
+            ? '#f0f0f0'
+            : 'inherit',
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {renderItem ? renderItem?.(item) : <Text>{item.label}</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <BottomSheet>
+    <Modal
+      visible={visible}
+      presentationStyle="pageSheet"
+      onRequestClose={() => setVisible(false)}
+    >
       <View style={[defaultStyle.item, style]}>
         <FlashList
           keyboardShouldPersistTaps={'handled'}
           // ref={(ref) => (_flashListRef.current = ref)}
           data={items}
-          renderItem={({ item, index }) => {
-            const isLastItem = items.length - 1 === index;
-            let wasSelected = ownSelectsItem.selectsItems?.includes(item);
-            return (
-              <TouchableOpacity
-                disabled={wasSelected}
-                key={item.key}
-                onPress={() => {
-                  if (multiSelect) {
-                    setSelectsItem((prev: ItemType[]) => [...prev, item]);
-                    ownSelectsItem.selectsItems?.push(item);
-
-                    console.log(selectsItem);
-                    if (wasSelected) wasSelected = !wasSelected;
-                    // onSelect(item);
-                  } else {
-                    setVisible(false);
-                    setSelectItem(item);
-                  }
-                }}
-                style={{
-                  marginBottom: isLastItem ? 80 : 0,
-                  backgroundColor: wasSelected ? '#f0f0f0' : 'inherit',
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {renderItem ? renderItem?.(item) : <Text>{item.label}</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={renderItemTemplate}
           keyExtractor={(item) => item.key}
           ListEmptyComponent={() => (
             <View style={defaultStyle.listNullContainer}>
@@ -180,7 +198,7 @@ const SelectModal = ({ renderItem, style }: SelectModalProps) => {
           estimatedItemSize={items.length}
         />
       </View>
-    </BottomSheet>
+    </Modal>
   );
 };
 const SelectPicker = ({
@@ -218,7 +236,7 @@ const SelectPicker = ({
         selectItem,
         setSelectItem,
         multiSelect,
-        selectsItem: multiSelect ? selectsItem : undefined,
+        selectsItem: multiSelect ? selectsItem : [],
         setSelectsItem,
       }}
     >
